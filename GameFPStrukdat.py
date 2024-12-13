@@ -1,36 +1,149 @@
 import pygame
 import random
 import math
+
 pygame.init()
 
-# Constants
+### Constants (Paten)
 HEIGHT, WIDTH = 720, 1280
 FPS = 30
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 
-# FONT
+### Fonts and Caption
 font = pygame.font.Font(None, 50)
-pygame.display.set_caption("Anomaly")
+pygame.display.set_caption("Magician's Curse")
 
-# COLOURS
+
+### Load Models
+new_width = 50 
+new_height = 50 
+
+player_idle_1 = pygame.image.load("Assets/Player/Idle-1.png")
+player_idle_2 = pygame.image.load("Assets/Player/Idle-2.png")
+
+player_idle_1 = pygame.transform.scale(player_idle_1, (new_width, new_height))
+player_idle_2 = pygame.transform.scale(player_idle_2, (new_width, new_height))
+
+background = pygame.image.load("Assets/background.png")
+background = pygame.transform.scale(background, (1280*1.2, 720*1.2))
+
+### Colors
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
+YELLOW = (255, 255, 0)
+ORANGE = (255, 165, 0)
+CYAN = (0, 255, 255)
+PURPLE = (128, 0, 128)
 
-# VARIABLE (PATTERN)
+### Variable (Paten)
 CHAR_SIZE = 50
-SPAWN_INTERVAL = 1000  # in milliseconds (1 second)
+SPAWN_INTERVAL = 1000
 BULLET_RADIUS = 5
 BULLET_SPEED = 20
-BULLET_COOLDOWN = 700  # in milliseconds
-DAMAGE_BULLET = 5  # Damage to enemies when hit by a bullet
-DAMAGE_MELEE_WEAPON = 7  # Damage of the new melee weapon
-MELEE_WEAPON_RANGE = 100  # Range of the melee weapon
-MELEE_WEAPON_ANGLE = 60  # Attack cone angle in degrees
-MELEE_COOLDOWN = 3000  # in milliseconds (5 seconds cooldown for melee)
+BULLET_COOLDOWN = 700
+DAMAGE_BULLET = 5
+DAMAGE_MELEE_WEAPON = 7
+MELEE_WEAPON_RANGE = 150
+MELEE_WEAPON_ANGLE = 60
+MELEE_COOLDOWN = 3000
+ENEMY_COLLISION_RADIUS = 60  # Increased collision radius for enemies
 
+# Spells and incantations List
+SPELLS = {
+    "Fireball": {
+        "incantations": [
+            "may the fire from hell burn upon you",
+            "fiery inferno, the great destruction",
+            "corpses die in blazing fire",
+            "fire"
+        ],
+        "color": RED
+    },
+    "Lightning": {
+        "incantations": [
+            "strike with the wrath of the storm",
+            "thunder, heed my call",
+            "let the heavens unleash their fury"
+        ],
+        "color": YELLOW
+    },
+    "Meteor": {
+        "incantations": [
+            "stars fall to destroy my foes",
+            "celestial flames, rain upon the earth",
+            "a fiery comet to obliterate all"
+        ],
+        "color": ORANGE
+    },
+    "Regenerate": {
+        "incantations": [
+            "renew my body and spirit",
+            "life springs eternal within me",
+            "a cycle of rebirth restores me"
+        ],
+        "color": GREEN
+    },
+    "Haste": {
+        "incantations": [
+            "speed of the wind, carry me forward",
+            "light as a feather, swift as a hawk",
+            "time slows as I accelerate"
+        ],
+        "color": BLUE
+    },
+    "Freeze": {
+        "incantations": [
+            "time stands still at my command",
+            "halt the motion of all things",
+            "freeze this moment for eternity"
+        ],
+        "color": CYAN
+    },
+    "Weaken": {
+        "incantations": [
+            "sap their strength and resolve",
+            "drain their power, leave them fragile",
+            "with my will, they crumble"
+        ],
+        "color": PURPLE
+    },
+    "Spirit": {
+        "incantations": [
+            "a wraith of the ether, come forth",
+            "spirit of the otherworld, join me",
+            "a phantom ally, answer my plea",
+            "ghost"
+        ],
+        "color": WHITE
+    }
+}
+
+# Function to activate a spell
+def activate_spell(spell, player_x, player_y, bullets, fireballs):
+    print(f"Spell Activated: {spell}")
+    if spell == "Fireball":
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        fireball = Fireball(player_x + CHAR_SIZE // 2, player_y + CHAR_SIZE // 2, mouse_x, mouse_y)
+        fireballs.append(fireball)
+    elif spell == "Lightning":
+        pass
+    elif spell == "Meteor":
+        pass
+    elif spell == "Regenerate":
+        pass
+    elif spell == "Haste":
+        pass
+    elif spell == "Freeze":
+        pass
+    elif spell == "Weaken":
+        pass
+    elif spell == "Spirit":
+        pass
+
+### Classes
 class Enemy:
     def __init__(self, x, y, hp, attack_damage):
         self.x = x
@@ -39,18 +152,70 @@ class Enemy:
         self.attack_damage = attack_damage
         self.width = CHAR_SIZE
         self.height = CHAR_SIZE
-        self.speed = 2  # Speed of the enemy
+        self.speed = 2
+        self.idle_counter = 0
+        self.new_width = 50
+        self.new_height = 50
+
+        # Load Image
+        self.enemy_run_1 = pygame.image.load("Assets/Enemy/slimeIdle1.png")
+        self.enemy_run_2 = pygame.image.load("Assets/Enemy/slimeIdle2.png")
+        self.enemy_run_3 = pygame.image.load("Assets/Enemy/slimeIdle3.png")
+        self.enemy_run_4 = pygame.image.load("Assets/Enemy/slimeIdle4.png")
+
+        self.enemy_run_1 = pygame.transform.scale(self.enemy_run_1, (self.new_width, self.new_height))
+        self.enemy_run_2 = pygame.transform.scale(self.enemy_run_2, (self.new_width, self.new_height))
+        self.enemy_run_3 = pygame.transform.scale(self.enemy_run_3, (self.new_width, self.new_height))
+        self.enemy_run_4 = pygame.transform.scale(self.enemy_run_4, (self.new_width, self.new_height))
+
+        self.enemy_image = self.enemy_run_1  # Default to the first frame
+
+    def move(self):
+        # Flip the image based on movement direction
+        if self.speed > 0:
+            # Moving right, no need to flip
+            self.enemy_image = self.enemy_run_1
+        elif self.speed < 0:
+            # Moving left, flip the image
+            self.enemy_image = pygame.transform.flip(self.enemy_run_1, False, True)
 
     def draw(self, window):
-        pygame.draw.rect(window, BLUE, (self.x, self.y, self.width, self.height))
+        if self.speed != 0:  # If enemy is moving
+            if self.idle_counter // 15 % 4 == 0:
+                self.enemy_image = self.enemy_run_1
+            elif self.idle_counter // 15 % 4 == 1:
+                self.enemy_image = self.enemy_run_2
+            elif self.idle_counter // 15 % 4 == 2:
+                self.enemy_image = self.enemy_run_3
+            elif self.idle_counter // 15 % 4 == 3:
+                self.enemy_image = self.enemy_run_4
 
-        # Draw HP text in the middle of the enemy
+            # Increment idle counter to cycle through frames
+            self.idle_counter += 1
+
+        # Draw the current frame of the animation
+        self.move()
+
+        WIN.blit(self.enemy_image, (self.x, self.y))
+
+        # Enemy health text
         hp_text = font.render(str(self.hp), True, WHITE)
-        text_rect = hp_text.get_rect(center=(self.x + self.width // 2, self.y + self.height // 2))
+        text_rect = hp_text.get_rect(center=(self.x + self.width // 2, self.y + self.height // 2 - 30))
         window.blit(hp_text, text_rect)
 
-    def update(self, player_x, player_y):
-        # Move towards the player
+    def update(self, player_x, player_y, enemies, spell_box):
+
+        self.move()
+
+        WIN.blit(self.enemy_image, (self.x, self.y))
+
+        # Slow enemies down when spell box is active
+        if spell_box == 1:
+            self.speed = 0.5  # Slow speed
+        else:
+            self.speed = 2  # Normal speed
+
+        # Move towards player
         if self.x < player_x:
             self.x += self.speed
         elif self.x > player_x:
@@ -61,27 +226,37 @@ class Enemy:
         elif self.y > player_y:
             self.y -= self.speed
 
+        self.idle_counter += 1
+
+        # Check for collisions with other enemies
+        for enemy in enemies:
+            if enemy != self:
+                # Increase collision radius
+                dist = math.hypot(self.x - enemy.x, self.y - enemy.y)
+                if dist < ENEMY_COLLISION_RADIUS:  # If enemies are too close, sundul2an
+                    angle = math.atan2(self.y - enemy.y, self.x - enemy.x)
+                    self.x += math.cos(angle) * self.speed
+                    self.y += math.sin(angle) * self.speed
+
     def is_hit(self, bullet_x, bullet_y):
         return self.x < bullet_x < self.x + self.width and self.y < bullet_y < self.y + self.height
 
     def take_damage(self, damage):
         self.hp -= damage
-        if self.hp <= 0:
-            return True  # Indicates that the enemy is dead
-        return False
+        return self.hp <= 0
 
 class Bullet:
-    def __init__(self, x, y, target_x, target_y):
+    def __init__(self, x, y, target_x, target_y, speed=BULLET_SPEED, color=WHITE):
         self.x = x
         self.y = y
-        self.target_x = target_x
-        self.target_y = target_y
+        self.speed = speed
+        self.color = color
         angle = math.atan2(target_y - y, target_x - x)
-        self.vel_x = BULLET_SPEED * math.cos(angle)
-        self.vel_y = BULLET_SPEED * math.sin(angle)
+        self.vel_x = self.speed * math.cos(angle)
+        self.vel_y = self.speed * math.sin(angle)
 
     def draw(self, window):
-        pygame.draw.circle(window, WHITE, (int(self.x), int(self.y)), BULLET_RADIUS)
+        pygame.draw.circle(window, self.color, (int(self.x), int(self.y)), BULLET_RADIUS)
 
     def update(self):
         self.x += self.vel_x
@@ -90,160 +265,216 @@ class Bullet:
     def is_out_of_bounds(self):
         return self.x < 0 or self.x > WIDTH or self.y < 0 or self.y > HEIGHT
 
-def draw_window(player_x, player_y, enemies, bullets, spell_box_text, damage_area, bullet_cooldown_counter, melee_cooldown_counter, spell_box):
-    WIN.fill(GREEN)
+class Fireball:
+    def __init__(self, x, y, target_x, target_y):
+        self.x = x
+        self.y = y
+        self.speed = 15
+        self.color = RED
+        self.radius = 15  # Slightly larger than the bullet
+        angle = math.atan2(target_y - y, target_x - x)
+        self.vel_x = self.speed * math.cos(angle)
+        self.vel_y = self.speed * math.sin(angle)
 
-    # Player
-    pygame.draw.rect(WIN, RED, (player_x, player_y, CHAR_SIZE, CHAR_SIZE))
+    def draw(self, window):
+        pygame.draw.circle(window, self.color, (int(self.x), int(self.y)), self.radius)
 
-    # Enemies
+    def update(self):
+        self.x += self.vel_x
+        self.y += self.vel_y
+
+    def is_out_of_bounds(self):
+        return self.x < 0 or self.x > WIDTH or self.y < 0 or self.y > HEIGHT
+
+    def check_collision(self, enemy):
+        dist = math.hypot(self.x - (enemy.x + enemy.width // 2), self.y - (enemy.y + enemy.height // 2))
+        if dist < self.radius + ENEMY_COLLISION_RADIUS:
+            return True
+        return False
+
+### Draw
+def draw_window(player_x, player_y, enemies, bullets, fireballs, spell_box_text, damage_area, bullet_cooldown_counter, melee_cooldown_counter, spell_box, active_spell_text, active_spell_color, player_hp, player_invisible=False, player_idle_counter=0):
+    WIN.blit(background, (-120, -100))
+
+     # Alternate player image every 0.5 seconds (every 15 frames at 30 FPS)
+    if player_idle_counter // 15 % 2 == 0:
+        player_image = player_idle_1
+    else:
+        player_image = player_idle_2
+
+    # Draw the player
+    WIN.blit(player_image, (player_x, player_y))
+
     for enemy in enemies:
         enemy.draw(WIN)
 
-    # Bullets
     for bullet in bullets:
         bullet.draw(WIN)
 
-    # Damage Area Visualization ("X" shape melee weapon)
+    for fireball in fireballs:
+        fireball.draw(WIN)
+
     for start_angle, end_angle in damage_area:
-        pygame.draw.line(WIN, WHITE, 
-                         (player_x + CHAR_SIZE // 2, player_y + CHAR_SIZE // 2),
-                         (player_x + CHAR_SIZE // 2 + MELEE_WEAPON_RANGE * math.cos(start_angle),
-                          player_y + CHAR_SIZE // 2 + MELEE_WEAPON_RANGE * math.sin(start_angle)), 
-                         2)
-        pygame.draw.line(WIN, WHITE, 
-                         (player_x + CHAR_SIZE // 2, player_y + CHAR_SIZE // 2),
-                         (player_x + CHAR_SIZE // 2 + MELEE_WEAPON_RANGE * math.cos(end_angle),
-                          player_y + CHAR_SIZE // 2 + MELEE_WEAPON_RANGE * math.sin(end_angle)), 
-                         2)
+        pygame.draw.line(
+            WIN, WHITE,
+            (player_x + CHAR_SIZE // 2, player_y + CHAR_SIZE // 2),
+            (player_x + CHAR_SIZE // 2 + MELEE_WEAPON_RANGE * math.cos(start_angle),
+             player_y + CHAR_SIZE // 2 + MELEE_WEAPON_RANGE * math.sin(start_angle)),
+            2
+        )
+        pygame.draw.line(
+            WIN, WHITE,
+            (player_x + CHAR_SIZE // 2, player_y + CHAR_SIZE // 2),
+            (player_x + CHAR_SIZE // 2 + MELEE_WEAPON_RANGE * math.cos(end_angle),
+             player_y + CHAR_SIZE // 2 + MELEE_WEAPON_RANGE * math.sin(end_angle)),
+            2
+        )
 
-    # Draw Cooldown Timers with "READY" or Countdown
-    bullet_cooldown_text = "READY" if bullet_cooldown_counter == 0 else f"{bullet_cooldown_counter // 1000}s"
-    bullet_cooldown_label = font.render(f"Bullet: {bullet_cooldown_text}", True, WHITE)
-    WIN.blit(bullet_cooldown_label, (WIDTH - bullet_cooldown_label.get_width() - 20, HEIGHT - 80))
+    bullet_text = "READY" if bullet_cooldown_counter == 0 else f"{bullet_cooldown_counter // 1000}s"
+    bullet_label = font.render(f"Bullet: {bullet_text}", True, WHITE)
+    WIN.blit(bullet_label, (WIDTH - bullet_label.get_width() - 20, HEIGHT - 80))
 
-    melee_cooldown_text = "READY" if melee_cooldown_counter == 0 else f"{melee_cooldown_counter // 1000}s"
-    melee_cooldown_label = font.render(f"Melee: {melee_cooldown_text}", True, WHITE)
-    WIN.blit(melee_cooldown_label, (WIDTH - melee_cooldown_label.get_width() - 20, HEIGHT - 40))
+    melee_text = "READY" if melee_cooldown_counter == 0 else f"{melee_cooldown_counter // 1000}s"
+    melee_label = font.render(f"Melee: {melee_text}", True, WHITE)
+    WIN.blit(melee_label, (WIDTH - melee_label.get_width() - 20, HEIGHT - 40))
 
-    # Spell Box UI - display when active
+    # Display player's health
+    health_label = font.render(f"HP: {player_hp}", True, WHITE)
+    WIN.blit(health_label, (20, 720-50))
+
     if spell_box == 1:
-        # Draw Spellbox box
-        pygame.draw.rect(WIN, WHITE, (WIDTH // 4, HEIGHT // 4, WIDTH // 2, 100), 2)  # Spellbox box
-        # Draw text "Spellbox Active"
-        spellbox_text = font.render("Spellbox Active", True, WHITE)
-        WIN.blit(spellbox_text, (WIDTH // 4 + 10, HEIGHT // 4 - 40))
-        # Draw the text that the player types
-        user_input_text = font.render(spell_box_text, True, WHITE)
-        WIN.blit(user_input_text, (WIDTH // 4 + 10, HEIGHT // 4 + 30))
+        pygame.draw.rect(WIN, WHITE, (WIDTH // 4, HEIGHT // 4, WIDTH // 2, 100), 2)
+        spellbox_label = font.render("Spellbox Active", True, WHITE)
+        WIN.blit(spellbox_label, (WIDTH // 4 + 10, HEIGHT // 4 - 40))
+        user_input_label = font.render(spell_box_text, True, WHITE)
+        WIN.blit(user_input_label, (WIDTH // 4 + 10, HEIGHT // 4 + 30))
+
+    if active_spell_text:
+        active_spell_label = font.render(active_spell_text, True, active_spell_color)
+        WIN.blit(active_spell_label, ((WIDTH - active_spell_label.get_width()) // 2, HEIGHT - 120))
+
+    pygame.display.update()
 
 def main():
-    global spell_box  # Track if the spell box is active
-    global spell_box_text  # Track the text typed in the spell box
-
-    # VARIABLES (NEED TO UPDATE)
     player_x, player_y = 590, 310
+    player_hp = 3
     vel = 5
-    spell_box = 0  # Spell box is initially closed (inactive)
-    spell_box_text = ""  # Stores the text typed by the player in the spellbox
-    enemies = []
-    bullets = []
-    last_bullet_time = 0
-    last_melee_time = 0  # Track last time melee was used
-    bullet_cooldown_counter = 0
-    melee_cooldown_counter = 0
+    spell_box, spell_box_text = 0, ""
+    enemies, bullets, fireballs = [], [], []  # Initialize the enemy, bullets, and fireballs list
+    last_bullet_time, last_melee_time = 0, 0
+    bullet_cooldown_counter, melee_cooldown_counter = 0, 0
+    active_spell_text = ""
+    active_spell_color = WHITE
+    player_invisible = False
+    player_idle_counter = 0
 
-    run_game = True
     clock = pygame.time.Clock()
-
-    # Spawn timer
     pygame.time.set_timer(pygame.USEREVENT, SPAWN_INTERVAL)
 
-    ### EVENT CHECKER
+    run_game = True
     while run_game:
         clock.tick(FPS)
         current_time = pygame.time.get_ticks()
-        damage_area = []  # Reset damage areas each frame
+        damage_area = []
 
-        # Cooldown counters
         bullet_cooldown_counter = max(0, bullet_cooldown_counter - clock.get_time())
         melee_cooldown_counter = max(0, melee_cooldown_counter - clock.get_time())
 
+
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:  # exit
+            if event.type == pygame.QUIT:
                 run_game = False
 
-            # Spellbox event handling
             if event.type == pygame.KEYDOWN:
-                if spell_box == 1:  # If the spell box is active
+                if spell_box == 1:
                     if event.key == pygame.K_BACKSPACE:
-                        spell_box_text = spell_box_text[:-1]  # Remove the last character
+                        spell_box_text = spell_box_text[:-1]
                     elif event.key == pygame.K_ESCAPE:
-                        spell_box = 0  # Close the spell box when Escape is pressed
-                        spell_box_text = ""  # Reset the text when closing the spell box
+                        spell_box, spell_box_text = 0, ""
                     else:
-                        spell_box_text += event.unicode  # Add the typed character
-                else:  # If the spell box is not active
-                    if event.key == pygame.K_i:
-                        spell_box = 1  # Activate the spell box when 'i' is pressed
+                        spell_box_text += event.unicode
+                elif event.key == pygame.K_i:
+                    spell_box = 1
 
-            # Spawn enemy
             if event.type == pygame.USEREVENT:
                 side = random.choice(["left", "right"])
                 x = 0 if side == "left" else WIDTH - CHAR_SIZE
                 y = random.randint(0, HEIGHT - CHAR_SIZE)
-                hp = 15  # Initial HP of the enemy
-                attack_damage = random.randint(5, 20)
+                hp, attack_damage = 15, random.randint(5, 20)
                 enemies.append(Enemy(x, y, hp, attack_damage))
 
-        keys = pygame.key.get_pressed()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Left-click: Shooting bullets
+                if event.button == 1:
+                    if bullet_cooldown_counter == 0:
+                        mouse_x, mouse_y = pygame.mouse.get_pos()
+                        bullets.append(Bullet(player_x + CHAR_SIZE // 2, player_y + CHAR_SIZE // 2, mouse_x, mouse_y))
+                        bullet_cooldown_counter = BULLET_COOLDOWN
 
-        # Player movement restrictions when spell box is active
-        if spell_box == 0:  # Only allow player movement if spell box is inactive
-            # Player Control
-            if keys[pygame.K_a]:  # LEFT
+                # Right-click: Melee attack
+                elif event.button == 3:
+                    if melee_cooldown_counter == 0:
+                        mouse_x, mouse_y = pygame.mouse.get_pos()
+                        angle_to_mouse = math.degrees(math.atan2(mouse_y - (player_y + CHAR_SIZE // 2), mouse_x - (player_x + CHAR_SIZE // 2)))
+
+                        start_angle = math.radians(angle_to_mouse + MELEE_WEAPON_ANGLE / 2)
+                        end_angle = math.radians(angle_to_mouse - MELEE_WEAPON_ANGLE / 2)
+                        damage_area.append((start_angle, end_angle))
+
+                        for enemy in enemies[:]:
+                            enemy_center_x, enemy_center_y = enemy.x + enemy.width // 2, enemy.y + enemy.height // 2
+                            distance = math.hypot(enemy_center_x - (player_x + CHAR_SIZE // 2), enemy_center_y - (player_y + CHAR_SIZE // 2))
+
+                            if distance <= MELEE_WEAPON_RANGE:
+                                angle_to_enemy = math.degrees(math.atan2(enemy_center_y - (player_y + CHAR_SIZE // 2), enemy_center_x - (player_x + CHAR_SIZE // 2)))
+                                angle_diff = (angle_to_enemy - angle_to_mouse + 360) % 360
+
+                                if angle_diff <= MELEE_WEAPON_ANGLE / 2 or angle_diff >= 360 - MELEE_WEAPON_ANGLE / 2:
+                                    if enemy.take_damage(DAMAGE_MELEE_WEAPON):
+                                        enemies.remove(enemy)
+                        melee_cooldown_counter = MELEE_COOLDOWN
+
+                # Middle-click: Activate Fireball spell if ready
+                elif event.button == 2:
+                    if active_spell_text.endswith("READY"):  # Check if spell is ready
+                        spell_name = active_spell_text.split()[0]  # Extract the spell name from the active text
+                        activate_spell(spell_name, player_x, player_y, bullets, fireballs)  # Pass the fireballs list here
+                        active_spell_text = ""  # Reset after activation
+                        active_spell_color = WHITE  # Reset color
+
+
+        keys = pygame.key.get_pressed()
+        if spell_box == 0:
+            if keys[pygame.K_a]:
                 player_x -= vel
-            if keys[pygame.K_d]:  # RIGHT
+            if keys[pygame.K_d]:
                 player_x += vel
-            if keys[pygame.K_w]:  # UP
+            if keys[pygame.K_w]:
                 player_y -= vel
-            if keys[pygame.K_s]:  # DOWN
+            if keys[pygame.K_s]:
                 player_y += vel
 
-        # Map Area for Player bound
         player_x = max(0, min(player_x, WIDTH - CHAR_SIZE))
         player_y = max(0, min(player_y, HEIGHT - CHAR_SIZE))
 
-        # Enemy movement speed reduction when spell box is active
         for enemy in enemies:
-            if spell_box == 1:  # Slow down enemies if spell box is active
-                enemy.speed = 1  # Reduced speed
-            else:
-                enemy.speed = 2  # Normal speed
+            enemy.update(player_x, player_y, enemies, spell_box)
 
-        # Shooting bullets with cooldown
         if pygame.mouse.get_pressed()[0] and bullet_cooldown_counter == 0:
             mouse_x, mouse_y = pygame.mouse.get_pos()
             bullets.append(Bullet(player_x + CHAR_SIZE // 2, player_y + CHAR_SIZE // 2, mouse_x, mouse_y))
             bullet_cooldown_counter = BULLET_COOLDOWN
 
-        # Melee Weapon Activation (Right Click)
         if pygame.mouse.get_pressed()[2] and melee_cooldown_counter == 0:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            # Calculate the angle between the player's center and the mouse position
             angle_to_mouse = math.degrees(math.atan2(mouse_y - (player_y + CHAR_SIZE // 2), mouse_x - (player_x + CHAR_SIZE // 2)))
 
-            # Invert the arc by swapping the start and end angles
             start_angle = math.radians(angle_to_mouse + MELEE_WEAPON_ANGLE / 2)
             end_angle = math.radians(angle_to_mouse - MELEE_WEAPON_ANGLE / 2)
-
-            # Display attack range visualization as a cross ("X")
             damage_area.append((start_angle, end_angle))
 
-            # Melee attack logic
             for enemy in enemies[:]:
-                enemy_center_x = enemy.x + enemy.width // 2
-                enemy_center_y = enemy.y + enemy.height // 2
+                enemy_center_x, enemy_center_y = enemy.x + enemy.width // 2, enemy.y + enemy.height // 2
                 distance = math.hypot(enemy_center_x - (player_x + CHAR_SIZE // 2), enemy_center_y - (player_y + CHAR_SIZE // 2))
 
                 if distance <= MELEE_WEAPON_RANGE:
@@ -255,31 +486,61 @@ def main():
                             enemies.remove(enemy)
             melee_cooldown_counter = MELEE_COOLDOWN
 
-        # Update bullets
-        for bullet in bullets[:]:  # Iterating over a copy of the list
+        for enemy in enemies[:]:
+            enemy_center_x, enemy_center_y = enemy.x + enemy.width // 2, enemy.y + enemy.height // 2
+            player_center_x, player_center_y = player_x + CHAR_SIZE // 2, player_y + CHAR_SIZE // 2
+            distance = math.hypot(enemy_center_x - player_center_x, enemy_center_y - player_center_y)
+
+            if distance < ENEMY_COLLISION_RADIUS:  # If the enemy collides with the player
+                player_hp -= 1
+                enemies.remove(enemy)  # Remove the enemy on collision
+
+        if player_hp <= 0:
+            
+            game_over_label = font.render("Game Over!", True, WHITE)
+            WIN.blit(game_over_label, ((WIDTH - game_over_label.get_width()) // 2, HEIGHT // 2))
+            pygame.display.update()
+            pygame.time.delay(2000)
+            run_game = False
+
+        for bullet in bullets[:]:
             bullet.update()
             if bullet.is_out_of_bounds():
                 bullets.remove(bullet)
             else:
-                for enemy in enemies[:]:  # Check each enemy for collision with this bullet
+                for enemy in enemies[:]:
                     if enemy.is_hit(bullet.x, bullet.y):
                         if enemy.take_damage(DAMAGE_BULLET):
                             enemies.remove(enemy)
-                        if bullet in bullets:  # Check if bullet is still in the list before removing
-                            bullets.remove(bullet)
+                        bullets.remove(bullet)
+        
+        for fireball in fireballs[:]:
+            fireball.update()
+            if fireball.is_out_of_bounds():
+                fireballs.remove(fireball)
+            else:
+                for enemy in enemies[:]:
+                    if fireball.check_collision(enemy):
+                        if enemy.take_damage(15):
+                            enemies.remove(enemy)
+                        
+        # Update spell box logic when it's active
+        if spell_box == 1 and spell_box_text:
+            for spell, data in SPELLS.items():
+                if spell_box_text.lower() in [incantation.lower() for incantation in data["incantations"]]:
+                    spell_box = 0
+                    spell_box_text = ""
+                    active_spell_text = f"{spell} READY"  # Show the "READY" status for the matched spell
+                    active_spell_color = data["color"]
+                    break  # Stop checking once a match is found
 
+        player_idle_counter += 1  # Increment the idle counter to cycle through player's frames
 
-        # Update enemies
-        for enemy in enemies:
-            enemy.update(player_x, player_y)
-
-        # Draw the game window
-        draw_window(player_x, player_y, enemies, bullets, spell_box_text, damage_area, bullet_cooldown_counter, melee_cooldown_counter, spell_box)
-
-        pygame.display.update()
+        draw_window(player_x, player_y, enemies, bullets, fireballs, spell_box_text, damage_area, bullet_cooldown_counter, melee_cooldown_counter, spell_box, active_spell_text, active_spell_color, player_hp, player_invisible, player_idle_counter)
+        
 
     pygame.quit()
 
+
 if __name__ == "__main__":
     main()
-ddd
